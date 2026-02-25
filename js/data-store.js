@@ -1,4 +1,20 @@
-// =============== DATA MANAGEMENT ===============
+// =============== FIREBASE + LOCALSTORAGE DATA MANAGEMENT ===============
+
+// Inisialisasi Firebase (pastikan firebase-config.js sudah dipanggil sebelumnya)
+let firebaseAvailable = false;
+let database = null;
+
+// Cek apakah Firebase tersedia
+if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+    try {
+        database = firebase.database();
+        firebaseAvailable = true;
+        console.log('🔥 Firebase Realtime Database siap digunakan');
+    } catch (e) {
+        console.warn('Firebase database tidak tersedia:', e);
+    }
+}
+
 class DataStore {
     constructor() {
         this.data = [];
@@ -6,34 +22,96 @@ class DataStore {
         this.init();
     }
 
-    init() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
+    async init() {
+        // Coba load dari Firebase dulu
+        if (firebaseAvailable && database) {
             try {
-                this.data = JSON.parse(stored);
+                const snapshot = await database.ref('microclass_data').once('value');
+                const firebaseData = snapshot.val();
+                
+                if (firebaseData && Array.isArray(firebaseData)) {
+                    this.data = firebaseData;
+                    console.log('☁️ Data dimuat dari Firebase:', this.data.length, 'item');
+                } else if (firebaseData && typeof firebaseData === 'object') {
+                    // Kalau data di Firebase berbentuk object (biasanya kalo pake push())
+                    this.data = Object.keys(firebaseData).map(key => ({
+                        ...firebaseData[key],
+                        firebaseKey: key
+                    }));
+                    console.log('☁️ Data dimuat dari Firebase (format object):', this.data.length, 'item');
+                } else {
+                    console.log('Data Firebase kosong, coba localStorage...');
+                    this.loadFromLocalStorage();
+                }
             } catch (e) {
-                this.data = [...defaultData];
+                console.warn('⚠️ Gagal load dari Firebase:', e.message);
+                this.loadFromLocalStorage();
             }
         } else {
-            this.data = [...defaultData];
-            this.saveToStorage();
+            console.log('Firebase tidak tersedia, pakai localStorage');
+            this.loadFromLocalStorage();
+        }
+        
+        // Simpan ke localStorage sebagai backup
+        this.saveToLocalStorage();
+        this.notify();
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                this.data = JSON.parse(stored);
+                console.log('💾 Data dimuat dari localStorage:', this.data.length, 'item');
+            } else {
+                this.data = [];
+                console.log('LocalStorage kosong');
+            }
+        } catch (e) {
+            console.error('Error load dari localStorage:', e);
+            this.data = [];
         }
     }
 
-    saveToStorage() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+        } catch (e) {
+            console.error('Error save ke localStorage:', e);
+        }
+    }
+
+    async syncToFirebase() {
+        if (!firebaseAvailable || !database) return false;
+        
+        try {
+            // Simpan ke Firebase dengan struktur array
+            await database.ref('microclass_data').set(this.data);
+            console.log('☁️ Data disinkronkan ke Firebase');
+            return true;
+        } catch (e) {
+            console.warn('⚠️ Gagal sync ke Firebase:', e.message);
+            return false;
+        }
     }
 
     subscribe(listener) {
         this.listeners.push(listener);
-        listener(this.data);
+        // Panggil listener dengan data yang ada
+        setTimeout(() => listener(this.data), 0);
         return () => {
             this.listeners = this.listeners.filter(l => l !== listener);
         };
     }
 
     notify() {
-        this.saveToStorage();
+        // Simpan ke localStorage
+        this.saveToLocalStorage();
+        
+        // Sync ke Firebase (async, tidak perlu ditunggu)
+        this.syncToFirebase();
+        
+        // Panggil semua listeners
         this.listeners.forEach(listener => listener(this.data));
     }
 
@@ -70,10 +148,16 @@ class DataStore {
     }
 
     getAll() { return this.data; }
-    getByType(type) { return this.data.filter(item => item.type === type); }
-    getById(id) { return this.data.find(item => item.id === id); }
     
-    // Fungsi baru untuk membersihkan data yang tidak memiliki relasi
+    getByType(type) { 
+        return this.data.filter(item => item.type === type); 
+    }
+    
+    getById(id) { 
+        return this.data.find(item => item.id === id); 
+    }
+    
+    // Fungsi untuk membersihkan data orphan
     cleanOrphanData() {
         const materiIds = this.getByType('materi').map(m => m.id);
         
@@ -118,11 +202,27 @@ class DataStore {
             }
         });
     }
+
+    // Fungsi untuk reset semua data (hati-hati!)
+    async resetAllData() {
+        this.data = [];
+        this.saveToLocalStorage();
+        if (firebaseAvailable && database) {
+            try {
+                await database.ref('microclass_data').set([]);
+                console.log('Semua data direset di Firebase');
+            } catch (e) {
+                console.error('Gagal reset Firebase:', e);
+            }
+        }
+        this.notify();
+    }
 }
 
+// Buat instance global
 const store = new DataStore();
 
-// Helper functions
+// Helper functions (tetap sama, tapi bisa dipanggil async kalau perlu)
 function getStudents() { 
     return store.getByType('student'); 
 }
@@ -148,3 +248,12 @@ function getTests() {
 function getProgress(studentId) {
     return store.getByType('progress').find(p => p.studentId === studentId);
 }
+
+// Fungsi untuk ngecek status koneksi Firebase
+function isFirebaseConnected() {
+    return firebaseAvailable && database;
+}
+
+// Export untuk digunakan di file lain
+window.store = store;
+window.isFirebaseConnected = isFirebaseConnected;
