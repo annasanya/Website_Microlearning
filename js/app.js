@@ -53,6 +53,33 @@ function attachAllEventListeners() {
     document.getElementById('refreshStudents')?.addEventListener('click', () => {
         render();
         showToast('Data diperbarui');
+
+        if (window.firebaseInitialized && window.firebaseDatabase) {
+            // Ambil data terbaru dari Firebase
+            const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
+            const freshData = snapshot.val();
+            
+            if (freshData && Array.isArray(freshData)) {
+                // Update data di store
+                store.data = freshData;
+                store.notify(); // Ini akan memicu render ulang
+                console.log('📦 Data diperbarui dari Firebase');
+            } else {
+                // Kalau ga ada di Firebase, reload dari localStorage
+                store.loadFromLocalStorage();
+                store.notify();
+            }
+        } else {
+            // Fallback ke localStorage
+            store.loadFromLocalStorage();
+            store.notify();
+        }
+        
+        showToast('Data berhasil diperbarui!', 'success');
+    } catch (error) {
+        console.error('Gagal refresh:', error);
+        showToast('Gagal memperbarui data', 'error');
+    }
     });
 
     // Delete all students
@@ -168,22 +195,108 @@ function attachAllEventListeners() {
     }
 
     // Refresh Pretest
-    document.getElementById('refreshPretest')?.addEventListener('click', () => {
-        render();
-        showToast('Data pretest diperbarui');
-    });
+    document.getElementById('refreshPretest')?.addEventListener('click', async () => {
+    try {
+        showToast('Memuat ulang data pretest...', 'info');
+        
+        // Reload data dari Firebase/localStorage
+        if (window.firebaseInitialized && window.firebaseDatabase) {
+            // Ambil data terbaru dari Firebase
+            const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
+            const freshData = snapshot.val();
+            
+            if (freshData && Array.isArray(freshData)) {
+                // Update data di store
+                store.data = freshData;
+                store.notify(); // Ini akan memicu render ulang
+                console.log('📦 Data pretest diperbarui dari Firebase');
+            } else {
+                // Kalau ga ada di Firebase, reload dari localStorage
+                store.loadFromLocalStorage();
+                store.notify();
+            }
+        } else {
+            // Fallback ke localStorage
+            store.loadFromLocalStorage();
+            store.notify();
+        }
+        
+        showToast('Data pretest berhasil diperbarui!', 'success');
+    } catch (error) {
+        console.error('Gagal refresh pretest:', error);
+        showToast('Gagal memperbarui data', 'error');
+    }
+});
 
     // Refresh Posttest
-    document.getElementById('refreshPosttest')?.addEventListener('click', () => {
-        render();
-        showToast('Data posttest diperbarui');
-    });
+    document.getElementById('refreshPosttest')?.addEventListener('click', async () => {
+    try {
+        showToast('Memuat ulang data posttest...', 'info');
+        
+        // Reload data dari Firebase/localStorage
+        if (window.firebaseInitialized && window.firebaseDatabase) {
+            // Ambil data terbaru dari Firebase
+            const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
+            const freshData = snapshot.val();
+            
+            if (freshData && Array.isArray(freshData)) {
+                // Update data di store
+                store.data = freshData;
+                store.notify(); // Ini akan memicu render ulang
+                console.log('📦 Data posttest diperbarui dari Firebase');
+            } else {
+                // Kalau ga ada di Firebase, reload dari localStorage
+                store.loadFromLocalStorage();
+                store.notify();
+            }
+        } else {
+            // Fallback ke localStorage
+            store.loadFromLocalStorage();
+            store.notify();
+        }
+        
+        showToast('Data posttest berhasil diperbarui!', 'success');
+    } catch (error) {
+        console.error('Gagal refresh posttest:', error);
+        showToast('Gagal memperbarui data', 'error');
+    }
+});
+
 
     // Tambahkan event listener untuk refresh LKPD
-    document.getElementById('refreshLkpd')?.addEventListener('click', () => {
-        render();
-        showToast('Data LKPD diperbarui');
-    });
+    document.getElementById('refreshlkpd')?.addEventListener('click', async () => {
+    try {
+        showToast('Memuat ulang data lkpd...', 'info');
+        
+        // Reload data dari Firebase/localStorage
+        if (window.firebaseInitialized && window.firebaseDatabase) {
+            // Ambil data terbaru dari Firebase
+            const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
+            const freshData = snapshot.val();
+            
+            if (freshData && Array.isArray(freshData)) {
+                // Update data di store
+                store.data = freshData;
+                store.notify(); // Ini akan memicu render ulang
+                console.log('📦 Data lkpd diperbarui dari Firebase');
+            } else {
+                // Kalau ga ada di Firebase, reload dari localStorage
+                store.loadFromLocalStorage();
+                store.notify();
+            }
+        } else {
+            // Fallback ke localStorage
+            store.loadFromLocalStorage();
+            store.notify();
+        }
+        
+        showToast('Data posttest berhasil diperbarui!', 'success');
+    } catch (error) {
+        console.error('Gagal refresh posttest:', error);
+        showToast('Gagal memperbarui data', 'error');
+    }
+});
+
 
     // Delete Pretest
     document.getElementById('deletePretestRekap')?.addEventListener('click', handleDeletePretest);
@@ -370,4 +483,5 @@ store.subscribe((data) => {
 document.addEventListener('DOMContentLoaded', () => {
     store.cleanOrphanData();
     render();
+
 });
