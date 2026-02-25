@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroClass - Sistem Administrasi Pembelajaran</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- XLSX Library untuk Export Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="h-full bg-gray-50 font-sans">
+    <div id="app" class="h-full overflow-auto"></div>
+
+    <!-- Core Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data-store.js"></script>
+    <script src="js/state.js"></script>
+    
+    <!-- Teacher Components -->
+    <script src="js/components/teacher/tests.js"></script>
+    <script src="js/components/teacher/materi.js"></script>
+    <script src="js/components/teacher/rekap.js"></script>
+    <script src="js/components/teacher/dashboard.js"></script>
+    
+    <!-- Student Components -->
+    <script src="js/components/student/dashboard.js"></script>
+    <script src="js/components/student/materi.js"></script>
+    <script src="js/components/student/sub-materi-detail.js"></script> <!-- TAMBAHKAN INI -->
+    <script src="js/components/student/nilai.js"></script>
+    
+    <!-- Login Component -->
+    <script src="js/components/login.js"></script>
+    
+    <!-- Event Listeners -->
+    <script src="js/events/auth.js"></script>
+    <script src="js/events/teacher/materi-events.js"></script>
+    <script src="js/events/teacher/submateri-events.js"></script>
+    <script src="js/events/teacher/test-events.js"></script>
+    <script src="js/events/student/student-events.js"></script>
+    
+    <!-- Main App -->
+    <script src="js/app.js"></script>
+</body>
+</html>
