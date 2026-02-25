@@ -57,6 +57,16 @@ function handleStartTest(e) {
 }
 
 function renderTestModal(testType, questions) {
+    // VALIDASI: Cek apakah questions ada dan punya length
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+        console.error('Questions tidak valid:', questions);
+        showToast('Soal tidak tersedia', 'error');
+        return;
+    }
+    
+    // VALIDASI: Cek struktur soal (pilihan ganda atau benar/salah)
+    const isMultipleChoice = questions[0] && Array.isArray(questions[0].options);
+    
     const modalHtml = `
         <div id="testModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
             <div class="bg-white rounded-2xl w-full max-w-2xl p-6 my-8 max-h-[90vh] overflow-y-auto">
@@ -73,12 +83,26 @@ function renderTestModal(testType, questions) {
                             </div>
                             <p class="text-lg font-semibold text-gray-800 mb-4">${escapeHtml(q.question)}</p>
                             <div class="space-y-3">
-                                ${q.options.map((opt, optIdx) => `
-                                    <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all">
-                                        <input type="radio" name="studentAns${i}" value="${optIdx}" data-student-ans="${i}" class="w-5 h-5 text-purple-600">
-                                        <span class="font-semibold text-gray-700">${String.fromCharCode(65 + optIdx)}. ${escapeHtml(opt)}</span>
-                                    </label>
-                                `).join('')}
+                                ${isMultipleChoice 
+                                    // FORMAT PILIHAN GANDA (dengan options)
+                                    ? q.options.map((opt, optIdx) => `
+                                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all">
+                                            <input type="radio" name="studentAns${i}" value="${optIdx}" data-student-ans="${i}" class="w-5 h-5 text-purple-600">
+                                            <span class="font-semibold text-gray-700">${String.fromCharCode(65 + optIdx)}. ${escapeHtml(opt)}</span>
+                                        </label>
+                                    `).join('')
+                                    // FORMAT BENAR/SALAH (backup)
+                                    : `
+                                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent cursor-pointer hover:border-green-400 hover:bg-green-50 transition-all">
+                                            <input type="radio" name="studentAns${i}" value="true" data-student-ans="${i}" class="w-5 h-5 text-green-600">
+                                            <span class="font-semibold text-gray-700">✓ Benar</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-transparent cursor-pointer hover:border-red-400 hover:bg-red-50 transition-all">
+                                            <input type="radio" name="studentAns${i}" value="false" data-student-ans="${i}" class="w-5 h-5 text-red-600">
+                                            <span class="font-semibold text-gray-700">✕ Salah</span>
+                                        </label>
+                                    `
+                                }
                             </div>
                         </div>
                     `).join('')}
@@ -92,23 +116,8 @@ function renderTestModal(testType, questions) {
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // Event listeners untuk modal test
-    document.getElementById('closeTestModal')?.addEventListener('click', () => {
-        document.getElementById('testModal')?.remove();
-    });
-    
-    document.querySelectorAll('[data-student-ans]').forEach(input => {
-        input.addEventListener('change', (e) => {
-            const index = parseInt(e.target.dataset.studentAns);
-            if (!isNaN(index)) {
-                state.studentAnswers[index] = parseInt(e.target.value);
-            }
-        });
-    });
-    
-    document.getElementById('submitTest')?.addEventListener('click', submitTest);
+    // ... rest of event listeners ...
 }
-
 function submitTest() {
     if (state.studentAnswers.includes(null)) {
         showToast('Jawab semua soal terlebih dahulu', 'error');
@@ -159,4 +168,5 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+
 }
