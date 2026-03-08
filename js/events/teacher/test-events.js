@@ -4,36 +4,40 @@ function attachTestEventListeners() {
     document.getElementById('addPretest')?.addEventListener('click', () => openTestModal('pretest'));
     document.getElementById('addPosttest')?.addEventListener('click', () => openTestModal('posttest'));
 
-    // View test
+    // Update di attachTestEventListeners bagian view test
     document.querySelectorAll('[data-view-test]').forEach(btn => {
         btn.addEventListener('click', () => {
             const testType = btn.dataset.viewTest;
             const test = getTests().find(t => t.testType === testType);
             if (test) {
                 const questions = parseJSON(test.questions);
-                document.getElementById('modalViewTestTitle').textContent = testType === 'pretest' ? 'Soal Pretest' : 'Soal Posttest';
+                document.getElementById('modalViewTestTitle').textContent = 
+                    testType === 'pretest' ? 'Soal Pretest (Pilihan Ganda)' : 'Soal Posttest (Pilihan Ganda)';
+                
                 document.getElementById('viewTestContainer').innerHTML = questions.map((q, i) => `
-                    <div class="bg-gray-50 rounded-xl p-4 border-l-4 border-purple-500">
-                        <p class="font-semibold text-gray-800 mb-2">${i + 1}. ${q.question}</p>
-                        <div class="ml-4 space-y-1">
-                            ${q.options.map((opt, optIdx) => `
-                                <div class="flex items-center gap-2 ${q.answer === optIdx ? 'text-green-600 font-semibold' : 'text-gray-600'}">
-                                    <span>${String.fromCharCode(65 + optIdx)}.</span>
-                                    <span>${opt}</span>
-                                    ${q.answer === optIdx ? ' ✓' : ''}
-                                </div>
-                            `).join('')}
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-l-4 border-purple-500">
+                        <p class="font-bold text-gray-800 mb-3">${i + 1}. ${escapeHtml(q.question)}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                            ${q.options.map((opt, idx) => {
+                                const letter = ['A', 'B', 'C', 'D', 'E'][idx];
+                                return `
+                                    <div class="flex items-center gap-2 p-2 ${q.answer === letter ? 'bg-green-100 rounded-lg' : ''}">
+                                        <span class="w-6 h-6 ${q.answer === letter ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'} rounded-full flex items-center justify-center text-xs font-bold">
+                                            ${letter}
+                                        </span>
+                                        <span class="text-gray-700">${escapeHtml(opt) || '(kosong)'}</span>
+                                        ${q.answer === letter ? '<span class="text-green-600 text-xs ml-2">✓ Jawaban Benar</span>' : ''}
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `).join('');
+                
                 document.getElementById('modalViewTest').classList.remove('hidden');
             }
         });
-    });
-
-    document.getElementById('closeViewTest')?.addEventListener('click', () => {
-        document.getElementById('modalViewTest').classList.add('hidden');
-    });
+});
 
     // Edit test
     document.querySelectorAll('[data-edit-test]').forEach(btn => {
@@ -61,11 +65,13 @@ function attachTestEventListeners() {
     });
 
     // Add question
+    // Di dalam attachTestEventListeners()
     document.getElementById('addQuestion')?.addEventListener('click', () => {
+        console.log('➕ Tambah soal diklik'); // Tambahkan log untuk debugging
         state.testQuestions.push({ 
             question: '', 
-            options: ['', '', '', ''],
-            answer: 0 // index jawaban yang benar (0,1,2,3)
+            options: ['', '', '', '', ''],
+            answer: 'A'
         });
         renderTestQuestions();
     });
@@ -77,15 +83,9 @@ function attachTestEventListeners() {
 
     // Save test
     document.getElementById('saveTest')?.addEventListener('click', () => {
-        // Validasi semua soal terisi
-        const validQuestions = state.testQuestions.filter(q => 
-            q.question.trim() && 
-            q.options.every(opt => opt.trim()) &&
-            q.answer !== undefined
-        );
-        
+        const validQuestions = state.testQuestions.filter(q => q.question.trim());
         if (validQuestions.length === 0) {
-            showToast('Tambahkan minimal 1 soal dengan semua field terisi', 'error');
+            showToast('Tambahkan minimal 1 soal', 'error');
             return;
         }
 
@@ -111,77 +111,145 @@ function renderTestQuestions() {
     if (!container) return;
 
     container.innerHTML = state.testQuestions.map((q, i) => `
-        <div class="bg-white border border-gray-200 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-                <span class="font-semibold text-gray-700 px-3 py-1 bg-purple-100 rounded-lg">${i + 1}</span>
+        <div class="bg-white border-2 border-gray-200 rounded-xl p-5 hover:border-purple-300 transition-all">
+            <!-- Header Soal -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center font-bold">${i + 1}</span>
+                    <span class="font-semibold text-gray-700">Soal Pilihan Ganda</span>
+                </div>
                 ${state.testQuestions.length > 1 ? `
-                    <button data-remove-q="${i}" class="text-red-500 hover:text-red-700 font-bold">✕</button>
+                    <button data-remove-q="${i}" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all" title="Hapus soal">
+                        🗑️ Hapus
+                    </button>
                 ` : ''}
             </div>
             
-            <textarea data-q-text="${i}" class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-4 focus:ring-2 focus:ring-purple-500" 
-                rows="2" placeholder="Masukkan pertanyaan">${q.question}</textarea>
-            
-            <div class="space-y-3 mb-4">
-                ${q.options.map((opt, optIdx) => `
-                    <div class="flex items-center gap-3">
-                        <span class="font-semibold text-gray-600 w-6">${String.fromCharCode(65 + optIdx)}.</span>
-                        <input type="text" data-q-opt="${i},${optIdx}" value="${opt}" 
-                            class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500" 
-                            placeholder="Opsi ${String.fromCharCode(65 + optIdx)}">
-                        <input type="radio" name="correctAnswer${i}" value="${optIdx}" ${q.answer === optIdx ? 'checked' : ''}
-                            data-q-correct="${i}" class="w-4 h-4 text-green-600">
-                    </div>
-                `).join('')}
+            <!-- Input Pertanyaan -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan</label>
+                <textarea data-q-text="${i}" 
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" 
+                    rows="2" 
+                    placeholder="Masukkan pertanyaan...">${escapeHtml(q.question)}</textarea>
             </div>
             
-            <p class="text-xs text-gray-400 mt-2">✓ Centang radio button pada jawaban yang benar</p>
+            <!-- Opsi Pilihan Ganda A-E -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Pilihan Jawaban</label>
+                <div class="space-y-3">
+                    ${['A', 'B', 'C', 'D', 'E'].map((letter, optIdx) => `
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 ${q.answer === letter ? 'bg-green-600' : 'bg-gray-200'} rounded-lg flex items-center justify-center font-bold ${q.answer === letter ? 'text-white' : 'text-gray-600'}">
+                                ${letter}
+                            </span>
+                            <input type="text" 
+                                data-q-option="${i}" 
+                                data-option-index="${optIdx}"
+                                value="${escapeHtml(q.options[optIdx] || '')}"
+                                class="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500" 
+                                placeholder="Opsi ${letter}...">
+                            <input type="radio" 
+                                name="answer${i}" 
+                                value="${letter}" 
+                                ${q.answer === letter ? 'checked' : ''}
+                                data-q-ans="${i}"
+                                class="w-5 h-5 text-green-600 focus:ring-green-500"
+                                title="Jadikan sebagai jawaban benar">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- Petunjuk -->
+            <div class="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">
+                <span class="font-semibold text-blue-600">📌 Petunjuk:</span> 
+                Isi semua opsi A-E, lalu pilih radio button pada jawaban yang benar.
+            </div>
         </div>
     `).join('');
 
     document.getElementById('questionCount').textContent = state.testQuestions.length + ' soal';
 
-    // Event listeners untuk pertanyaan
+    // Event listener untuk input pertanyaan
     container.querySelectorAll('[data-q-text]').forEach(input => {
         input.addEventListener('input', (e) => {
             state.testQuestions[parseInt(e.target.dataset.qText)].question = e.target.value;
         });
     });
 
-    // Event listeners untuk opsi jawaban
-    container.querySelectorAll('[data-q-opt]').forEach(input => {
+    // Event listener untuk input opsi
+    container.querySelectorAll('[data-q-option]').forEach(input => {
         input.addEventListener('input', (e) => {
-            const [qIdx, optIdx] = e.target.dataset.qOpt.split(',').map(Number);
-            state.testQuestions[qIdx].options[optIdx] = e.target.value;
+            const qIndex = parseInt(e.target.dataset.qOption);
+            const optIndex = parseInt(e.target.dataset.optionIndex);
+            state.testQuestions[qIndex].options[optIndex] = e.target.value;
         });
     });
 
-    // Event listeners untuk jawaban benar
-    container.querySelectorAll('[data-q-correct]').forEach(input => {
+    // Event listener untuk radio button jawaban
+    container.querySelectorAll('[data-q-ans]').forEach(input => {
         input.addEventListener('change', (e) => {
-            const qIdx = parseInt(e.target.dataset.qCorrect);
-            state.testQuestions[qIdx].answer = parseInt(e.target.value);
+            const qIndex = parseInt(e.target.dataset.qAns);
+            state.testQuestions[qIndex].answer = e.target.value;
+            
+            // Update visual warna huruf
+            const parentDiv = e.target.closest('.space-y-3');
+            if (parentDiv) {
+                parentDiv.querySelectorAll('span:first-child').forEach((span, idx) => {
+                    const letter = ['A', 'B', 'C', 'D', 'E'][idx];
+                    if (letter === e.target.value) {
+                        span.classList.remove('bg-gray-200', 'text-gray-600');
+                        span.classList.add('bg-green-600', 'text-white');
+                    } else {
+                        span.classList.remove('bg-green-600', 'text-white');
+                        span.classList.add('bg-gray-200', 'text-gray-600');
+                    }
+                });
+            }
         });
     });
 
-    // Event listeners untuk hapus soal
+    // Event listener untuk hapus soal
     container.querySelectorAll('[data-remove-q]').forEach(btn => {
         btn.addEventListener('click', () => {
             state.testQuestions.splice(parseInt(btn.dataset.removeQ), 1);
             renderTestQuestions();
         });
     });
+
+        // PASTIKAN EVENT LISTENER UNTUK TAMBAH SOAL TETAP AKTIF
+    setTimeout(() => {
+        const addBtn = document.getElementById('addQuestion');
+        if (addBtn) {
+            // Hapus listener lama dulu (pakai cloneNode)
+            const newAddBtn = addBtn.cloneNode(true);
+            addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+            
+            // Pasang listener baru
+            newAddBtn.addEventListener('click', () => {
+                console.log('➕ Tambah soal diklik (dari render)');
+                state.testQuestions.push({ 
+                    question: '', 
+                    options: ['', '', '', '', ''],
+                    answer: 'A'
+                });
+                renderTestQuestions();
+            });
+        }
+    }, 0);
+
 }
 
 function openTestModal(type) {
     state.currentTestType = type;
     state.testQuestions = [{ 
         question: '', 
-        options: ['', '', '', ''],
-        answer: 0 
+        options: ['', '', '', '', ''], // 5 opsi kosong
+        answer: 'A' // Default jawaban A
     }];
     state.editingTest = null;
-    document.getElementById('modalTestTitle').textContent = `Buat ${type === 'pretest' ? 'Pretest' : 'Posttest'}`;
+    document.getElementById('modalTestTitle').textContent = `Buat ${type === 'pretest' ? 'Pretest' : 'Posttest'} (Pilihan Ganda)`;
     renderTestQuestions();
     document.getElementById('modalTest').classList.remove('hidden');
 }

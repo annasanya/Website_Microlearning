@@ -50,10 +50,11 @@ function attachAllEventListeners() {
     });
 
     // Refresh buttons
-    document.getElementById('refreshStudents')?.addEventListener('click', () => {
-        render();
+    document.getElementById('refreshStudents')?.addEventListener('click', async () => {
+    try {
         showToast('Data diperbarui');
-
+        
+        // Reload data dari Firebase/localStorage
         if (window.firebaseInitialized && window.firebaseDatabase) {
             // Ambil data terbaru dari Firebase
             const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
@@ -80,7 +81,7 @@ function attachAllEventListeners() {
         console.error('Gagal refresh:', error);
         showToast('Gagal memperbarui data', 'error');
     }
-    });
+});
 
     // Delete all students
     document.getElementById('deleteAllStudents')?.addEventListener('click', handleDeleteAllStudents);
@@ -111,91 +112,66 @@ function attachAllEventListeners() {
 
     // =============== REKAP NILAI EVENT LISTENERS ===============
     
-    // Tab switching untuk rekap nilai
-        const tabPretest = document.getElementById('tabPretest');
-        const tabPosttest = document.getElementById('tabPosttest');
-        const tabLkpd = document.getElementById('tabLkpd'); // TAMBAHKAN
-
-        const pretestContainer = document.getElementById('pretestContainer');
-        const posttestContainer = document.getElementById('posttestContainer');
-        const lkpdContainer = document.getElementById('lkpdContainer'); // TAMBAHKAN
-
-        const pretestTools = document.getElementById('pretestTools');
-        const posttestTools = document.getElementById('posttestTools');
-        const lkpdTools = document.getElementById('lkpdTools'); // TAMBAHKAN
-
-    if (tabPretest) {
-        tabPretest.addEventListener('click', () => {
-            // Show pretest
-            pretestContainer.classList.remove('hidden');
-            posttestContainer.classList.add('hidden');
-            lkpdContainer.classList.add('hidden'); // TAMBAHKAN
-            
-            pretestTools.classList.remove('hidden');
-            posttestTools.classList.add('hidden');
-            lkpdTools.classList.add('hidden'); // TAMBAHKAN
-            
-            // Update tab styles
-            tabPretest.classList.remove('bg-gray-100', 'text-gray-600');
-            tabPretest.classList.add('bg-orange-100', 'text-orange-600');
-            
-            tabPosttest.classList.remove('bg-green-100', 'text-green-600');
-            tabPosttest.classList.add('bg-gray-100', 'text-gray-600');
-            
-            tabLkpd.classList.remove('bg-amber-100', 'text-amber-600'); // TAMBAHKAN
-            tabLkpd.classList.add('bg-gray-100', 'text-gray-600'); // TAMBAHKAN
-        });
+      // =============== YANG BARU (TAMBAHKAN INI) ===============
+    
+    // 1. Setup listener untuk tab rekap (Pretest, Posttest, LKPD)
+    if (typeof setupRekapTabListeners === 'function') {
+        setupRekapTabListeners();
     }
+    
+    // 2. Setup listener untuk upload LKPD di halaman siswa
+    if (state.currentView === 'student' && state.studentSubView === 'sub-materi-detail') {
+    console.log('🎯 Halaman sub materi detail, setup upload listener');
+    setTimeout(() => {
+        if (typeof setupLkpdUploadListeners === 'function') {
+            setupLkpdUploadListeners();
+        } else {
+            console.log('❌ Fungsi setupLkpdUploadListeners tidak ditemukan');
+        }
+    }, 300); // Naikkan jadi 300ms untuk pastikan DOM ready
+}
+    
+    // 3. Refresh LKPD
+    document.getElementById('refreshLkpd')?.addEventListener('click', async () => {
+        try {
+            showToast('Memuat ulang data LKPD...', 'info');
+            
+            if (window.firebaseInitialized && window.firebaseDatabase) {
+                const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
+                const freshData = snapshot.val();
+                
+                if (freshData && Array.isArray(freshData)) {
+                    store.data = freshData;
+                    store.notify();
+                    console.log('📦 Data LKPD diperbarui dari Firebase');
+                } else {
+                    store.loadFromLocalStorage();
+                    store.notify();
+                }
+            } else {
+                store.loadFromLocalStorage();
+                store.notify();
+            }
+            
+            showToast('Data LKPD berhasil diperbarui!', 'success');
+        } catch (error) {
+            console.error('Gagal refresh LKPD:', error);
+            showToast('Gagal memperbarui data LKPD', 'error');
+        }
+    });
+    
+    // 4. Export LKPD
+    document.getElementById('exportLkpdExcel')?.addEventListener('click', () => {
+        if (typeof exportLkpdToExcel === 'function') {
+            exportLkpdToExcel();
+        } else {
+            showToast('Fungsi export belum tersedia', 'error');
+        }
+    });
 
-    if (tabPosttest) {
-        tabPosttest.addEventListener('click', () => {
-            // Show posttest
-            pretestContainer.classList.add('hidden');
-            posttestContainer.classList.remove('hidden');
-            lkpdContainer.classList.add('hidden'); // TAMBAHKAN
-            
-            pretestTools.classList.add('hidden');
-            posttestTools.classList.remove('hidden');
-            lkpdTools.classList.add('hidden'); // TAMBAHKAN
-            
-            // Update tab styles
-            tabPosttest.classList.remove('bg-gray-100', 'text-gray-600');
-            tabPosttest.classList.add('bg-green-100', 'text-green-600');
-            
-            tabPretest.classList.remove('bg-orange-100', 'text-orange-600');
-            tabPretest.classList.add('bg-gray-100', 'text-gray-600');
-            
-            tabLkpd.classList.remove('bg-amber-100', 'text-amber-600'); // TAMBAHKAN
-            tabLkpd.classList.add('bg-gray-100', 'text-gray-600'); // TAMBAHKAN
-        });
-    }
 
-    // TAMBAHKAN EVENT LISTENER UNTUK TAB LKPD
-    if (tabLkpd) {
-        tabLkpd.addEventListener('click', () => {
-            // Show lkpd
-            pretestContainer.classList.add('hidden');
-            posttestContainer.classList.add('hidden');
-            lkpdContainer.classList.remove('hidden');
-            
-            pretestTools.classList.add('hidden');
-            posttestTools.classList.add('hidden');
-            lkpdTools.classList.remove('hidden');
-            
-            // Update tab styles
-            tabLkpd.classList.remove('bg-gray-100', 'text-gray-600');
-            tabLkpd.classList.add('bg-amber-100', 'text-amber-600');
-            
-            tabPretest.classList.remove('bg-orange-100', 'text-orange-600');
-            tabPretest.classList.add('bg-gray-100', 'text-gray-600');
-            
-            tabPosttest.classList.remove('bg-green-100', 'text-green-600');
-            tabPosttest.classList.add('bg-gray-100', 'text-gray-600');
-        });
-    }
-
-    // Refresh Pretest
-    document.getElementById('refreshPretest')?.addEventListener('click', async () => {
+    // Refresh Pretest - VERSI BARU (TANPA RELOAD BROWSER)
+document.getElementById('refreshPretest')?.addEventListener('click', async () => {
     try {
         showToast('Memuat ulang data pretest...', 'info');
         
@@ -228,8 +204,8 @@ function attachAllEventListeners() {
     }
 });
 
-    // Refresh Posttest
-    document.getElementById('refreshPosttest')?.addEventListener('click', async () => {
+// Refresh Posttest - VERSI BARU (TANPA RELOAD BROWSER)
+document.getElementById('refreshPosttest')?.addEventListener('click', async () => {
     try {
         showToast('Memuat ulang data posttest...', 'info');
         
@@ -262,42 +238,6 @@ function attachAllEventListeners() {
     }
 });
 
-
-    // Tambahkan event listener untuk refresh LKPD
-    document.getElementById('refreshlkpd')?.addEventListener('click', async () => {
-    try {
-        showToast('Memuat ulang data lkpd...', 'info');
-        
-        // Reload data dari Firebase/localStorage
-        if (window.firebaseInitialized && window.firebaseDatabase) {
-            // Ambil data terbaru dari Firebase
-            const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
-            const freshData = snapshot.val();
-            
-            if (freshData && Array.isArray(freshData)) {
-                // Update data di store
-                store.data = freshData;
-                store.notify(); // Ini akan memicu render ulang
-                console.log('📦 Data lkpd diperbarui dari Firebase');
-            } else {
-                // Kalau ga ada di Firebase, reload dari localStorage
-                store.loadFromLocalStorage();
-                store.notify();
-            }
-        } else {
-            // Fallback ke localStorage
-            store.loadFromLocalStorage();
-            store.notify();
-        }
-        
-        showToast('Data posttest berhasil diperbarui!', 'success');
-    } catch (error) {
-        console.error('Gagal refresh posttest:', error);
-        showToast('Gagal memperbarui data', 'error');
-    }
-});
-
-
     // Delete Pretest
     document.getElementById('deletePretestRekap')?.addEventListener('click', handleDeletePretest);
 
@@ -307,7 +247,6 @@ function attachAllEventListeners() {
     // Export buttons
     document.getElementById('exportPretest')?.addEventListener('click', exportPretestToExcel);
     document.getElementById('exportPosttest')?.addEventListener('click', exportPosttestToExcel);
-    document.getElementById('exportLkpd')?.addEventListener('click', exportLkpdToExcel);
 }
 
 // =============== EVENT HANDLERS ===============
@@ -483,5 +422,4 @@ store.subscribe((data) => {
 document.addEventListener('DOMContentLoaded', () => {
     store.cleanOrphanData();
     render();
-
 });

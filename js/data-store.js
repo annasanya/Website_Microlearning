@@ -1,20 +1,4 @@
-// =============== FIREBASE + LOCALSTORAGE DATA MANAGEMENT ===============
-
-// Inisialisasi Firebase (pastikan firebase-config.js sudah dipanggil sebelumnya)
-let firebaseAvailable = false;
-let database = null;
-
-// Cek apakah Firebase tersedia
-if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-    try {
-        database = firebase.database();
-        firebaseAvailable = true;
-        console.log('🔥 Firebase Realtime Database siap digunakan');
-    } catch (e) {
-        console.warn('Firebase database tidak tersedia:', e);
-    }
-}
-
+// =============== DATA MANAGEMENT ===============
 class DataStore {
     constructor() {
         this.data = [];
@@ -23,112 +7,164 @@ class DataStore {
     }
 
     async init() {
-        // Coba load dari Firebase dulu
-        if (firebaseAvailable && database) {
+        // Coba load dari Firebase
+        if (window.firebaseInitialized && window.firebaseDatabase) {
             try {
-                const snapshot = await database.ref('microclass_data').once('value');
+                const snapshot = await window.firebaseDatabase.ref('microclass_data').once('value');
                 const firebaseData = snapshot.val();
-                
                 if (firebaseData && Array.isArray(firebaseData)) {
                     this.data = firebaseData;
-                    console.log('☁️ Data dimuat dari Firebase:', this.data.length, 'item');
-                } else if (firebaseData && typeof firebaseData === 'object') {
-                    // Kalau data di Firebase berbentuk object (biasanya kalo pake push())
-                    this.data = Object.keys(firebaseData).map(key => ({
-                        ...firebaseData[key],
-                        firebaseKey: key
-                    }));
-                    console.log('☁️ Data dimuat dari Firebase (format object):', this.data.length, 'item');
+                    console.log('📦 Data dimuat dari Firebase');
                 } else {
-                    console.log('Data Firebase kosong, coba localStorage...');
                     this.loadFromLocalStorage();
                 }
             } catch (e) {
-                console.warn('⚠️ Gagal load dari Firebase:', e.message);
+                console.warn('Gagal load dari Firebase, pakai localStorage', e);
                 this.loadFromLocalStorage();
             }
         } else {
-            console.log('Firebase tidak tersedia, pakai localStorage');
             this.loadFromLocalStorage();
         }
         
-        // Simpan ke localStorage sebagai backup
-        this.saveToLocalStorage();
+        // TUNGGU migrasi selesai sebelum notify
+        await this.migrateTestsToMCQ(); // Tambahkan AWAIT
+        await this.migrateLkpdSubmissionsToObject();
+        
         this.notify();
     }
 
     loadFromLocalStorage() {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
                 this.data = JSON.parse(stored);
-                console.log('💾 Data dimuat dari localStorage:', this.data.length, 'item');
-            } else {
+                console.log('💾 Data dimuat dari localStorage');
+            } catch (e) {
                 this.data = [];
-                console.log('LocalStorage kosong');
             }
-        } catch (e) {
-            console.error('Error load dari localStorage:', e);
+        } else {
             this.data = [];
         }
     }
 
-    saveToLocalStorage() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-        } catch (e) {
-            console.error('Error save ke localStorage:', e);
+    async saveToStorage() {
+        // Simpan ke localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+        
+        // Simpan ke Firebase
+        if (window.firebaseInitialized && window.firebaseDatabase) {
+            try {
+                await window.firebaseDatabase.ref('microclass_data').set(this.data);
+                console.log('☁️ Data disinkronkan ke Firebase');
+            } catch (e) {
+                console.warn('Gagal sync ke Firebase', e);
+            }
         }
     }
 
-    async syncToFirebase() {
-        if (!firebaseAvailable || !database) return false;
+    // Fungsi migrasi yang SUDAH DIPERBAIKI
+    async migrateTestsToMCQ() {
+        const tests = this.getByType('test');
+        let migrated = false;
         
-        try {
-            // Simpan ke Firebase dengan struktur array
-            await database.ref('microclass_data').set(this.data);
-            console.log('☁️ Data disinkronkan ke Firebase');
-            return true;
-        } catch (e) {
-            console.warn('⚠️ Gagal sync ke Firebase:', e.message);
-            return false;
+        for (const test of tests) { // Gunakan for...of karena async
+            const questions = parseJSON(test.questions);
+            
+            // Cek apakah masih format lama (boolean)
+            if (questions.length > 0 && typeof questions[0].answer === 'boolean') {
+                console.log('🔄 Migrating test:', test.id);
+                
+                const newQuestions = questions.map(q => ({
+                    question: q.question,
+                    options: ['', '', '', '', ''], // Opsi kosong
+                    answer: q.answer ? 'A' : 'B' // true → A, false → B
+                }));
+                
+                // Update test
+                await this.update(test.id, { // TAMBAHKAN AWAIT
+                    questions: JSON.stringify(newQuestions)
+                });
+                
+                migrated = true;
+            }
         }
+        
+        if (migrated) {
+            console.log('✅ Test migration completed');
+            // PAKAI CARA AMAN UNTUK TOAST
+            setTimeout(() => {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Data test berhasil dimigrasi ke format pilihan ganda', 'success');
+                }
+            }, 100);
+        }
+        
+        return migrated;
+    }
+
+    // Di dalam class DataStore, tambahkan fungsi ini
+    async migrateLkpdSubmissionsToObject() {
+        console.log('🔄 Migrasi data LKPD submissions...');
+        const progresses = this.getByType('progress');
+        let migrated = false;
+        
+        for (const progress of progresses) {
+            if (progress.lkpdSubmissions) {
+                try {
+                    const parsed = JSON.parse(progress.lkpdSubmissions);
+                    // Jika masih array, konversi ke object
+                    if (Array.isArray(parsed)) {
+                        console.log(`⚠️ Progress ${progress.id} masih array, konversi ke object`);
+                        
+                        // Buat object kosong
+                        const newSubmissions = {};
+                        
+                        // Update ke database
+                        await this.update(progress.id, {
+                            lkpdSubmissions: JSON.stringify(newSubmissions)
+                        });
+                        
+                        migrated = true;
+                    }
+                } catch (e) {
+                    console.error('Error parsing:', e);
+                }
+            }
+        }
+        
+        if (migrated) {
+            console.log('✅ Migrasi LKPD submissions selesai');
+        }
+        
+        return migrated;
     }
 
     subscribe(listener) {
         this.listeners.push(listener);
-        // Panggil listener dengan data yang ada
-        setTimeout(() => listener(this.data), 0);
+        listener(this.data);
         return () => {
             this.listeners = this.listeners.filter(l => l !== listener);
         };
     }
 
     notify() {
-        // Simpan ke localStorage
-        this.saveToLocalStorage();
-        
-        // Sync ke Firebase (async, tidak perlu ditunggu)
-        this.syncToFirebase();
-        
-        // Panggil semua listeners
+        this.saveToStorage();
         this.listeners.forEach(listener => listener(this.data));
     }
 
     create(item) {
-        const now = new Date().toISOString();
         const newItem = {
             ...item,
             id: generateId(),
-            createdAt: now,
-            updatedAt: now
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
         this.data.push(newItem);
         this.notify();
         return newItem;
     }
 
-    update(id, updates) {
+    async update(id, updates) { // TAMBAHKAN async
         const index = this.data.findIndex(item => item.id === id);
         if (index !== -1) {
             this.data[index] = { 
@@ -136,56 +172,45 @@ class DataStore {
                 ...updates, 
                 updatedAt: new Date().toISOString() 
             };
-            this.notify();
+            await this.notify(); // TAMBAHKAN await
             return this.data[index];
         }
         return null;
     }
 
-    delete(id) {
+    async delete(id) { // TAMBAHKAN async
         this.data = this.data.filter(item => item.id !== id);
-        this.notify();
+        await this.notify(); // TAMBAHKAN await
     }
 
     getAll() { return this.data; }
+    getByType(type) { return this.data.filter(item => item.type === type); }
+    getById(id) { return this.data.find(item => item.id === id); }
     
-    getByType(type) { 
-        return this.data.filter(item => item.type === type); 
-    }
-    
-    getById(id) { 
-        return this.data.find(item => item.id === id); 
-    }
-    
-    // Fungsi untuk membersihkan data orphan
-    cleanOrphanData() {
+    async cleanOrphanData() { // TAMBAHKAN async
         const materiIds = this.getByType('materi').map(m => m.id);
         
-        // Hapus sub materi yang tidak memiliki materi induk
         const subs = this.getByType('submateri');
-        subs.forEach(sub => {
+        for (const sub of subs) {
             if (!materiIds.includes(sub.materiId)) {
-                this.delete(sub.id);
+                await this.delete(sub.id);
             }
-        });
+        }
         
-        // Hapus progress yang tidak memiliki siswa
         const studentIds = this.getByType('student').map(s => s.id);
         const progresses = this.getByType('progress');
-        progresses.forEach(progress => {
+        for (const progress of progresses) {
             if (!studentIds.includes(progress.studentId)) {
-                this.delete(progress.id);
+                await this.delete(progress.id);
+                continue;
             }
-        });
-        
-        // Bersihkan completedSubMateri dari progress yang merujuk ke sub materi yang sudah tidak ada
-        const validSubIds = this.getByType('submateri').map(s => s.id);
-        progresses.forEach(progress => {
+            
             if (progress.completedSubMateri) {
                 const completedSubs = parseJSON(progress.completedSubMateri);
+                const validSubIds = this.getByType('submateri').map(s => s.id);
                 const filteredSubs = completedSubs.filter(subId => validSubIds.includes(subId));
                 if (completedSubs.length !== filteredSubs.length) {
-                    this.update(progress.id, {
+                    await this.update(progress.id, {
                         completedSubMateri: JSON.stringify(filteredSubs)
                     });
                 }
@@ -193,67 +218,29 @@ class DataStore {
             
             if (progress.completedLkpd) {
                 const completedLkpd = parseJSON(progress.completedLkpd);
+                const validSubIds = this.getByType('submateri').map(s => s.id);
                 const filteredLkpd = completedLkpd.filter(subId => validSubIds.includes(subId));
                 if (completedLkpd.length !== filteredLkpd.length) {
-                    this.update(progress.id, {
+                    await this.update(progress.id, {
                         completedLkpd: JSON.stringify(filteredLkpd)
                     });
                 }
             }
-        });
-    }
-
-    // Fungsi untuk reset semua data (hati-hati!)
-    async resetAllData() {
-        this.data = [];
-        this.saveToLocalStorage();
-        if (firebaseAvailable && database) {
-            try {
-                await database.ref('microclass_data').set([]);
-                console.log('Semua data direset di Firebase');
-            } catch (e) {
-                console.error('Gagal reset Firebase:', e);
-            }
         }
-        this.notify();
     }
 }
 
-// Buat instance global
 const store = new DataStore();
 
-// Helper functions (tetap sama, tapi bisa dipanggil async kalau perlu)
-function getStudents() { 
-    return store.getByType('student'); 
-}
-
-function getMateri() { 
-    return store.getByType('materi'); 
-}
-
+function getStudents() { return store.getByType('student'); }
+function getMateri() { return store.getByType('materi'); }
 function getSubMateri(materiId = null) {
     const subs = store.getByType('submateri');
     const materiIds = getMateri().map(m => m.id);
-    
-    // Hanya kembalikan sub materi yang memiliki materi induk yang valid
     const validSubs = subs.filter(sub => materiIds.includes(sub.materiId));
-    
     return materiId ? validSubs.filter(s => s.materiId === materiId) : validSubs;
 }
-
-function getTests() { 
-    return store.getByType('test'); 
-}
-
+function getTests() { return store.getByType('test'); }
 function getProgress(studentId) {
     return store.getByType('progress').find(p => p.studentId === studentId);
 }
-
-// Fungsi untuk ngecek status koneksi Firebase
-function isFirebaseConnected() {
-    return firebaseAvailable && database;
-}
-
-// Export untuk digunakan di file lain
-window.store = store;
-window.isFirebaseConnected = isFirebaseConnected;

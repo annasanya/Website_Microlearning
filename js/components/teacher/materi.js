@@ -22,7 +22,7 @@ function renderMateriManager(materi, allSubMateri) {
         <div class="animate-fade">
             <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">📚 Kelola Materi</h1>
-                <button id="addMateri" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">
+                <button id="addMateri" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">
                     + Tambah Materi
                 </button>
             </div>
@@ -43,7 +43,7 @@ function renderMateriManager(materi, allSubMateri) {
                                 <div class="p-4 md:p-6 border-b border-gray-100">
                                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div class="flex items-center gap-4">
-                                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">${idx + 1}</div>
+                                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-2xl">${idx + 1}</div>
                                             <div>
                                                 <h3 class="text-lg font-bold text-gray-800">${m.title}</h3>
                                                 <p class="text-sm text-gray-500">${m.description || 'Tidak ada deskripsi'}</p>
@@ -113,15 +113,15 @@ function renderMateriManager(materi, allSubMateri) {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Judul Materi</label>
-                        <input type="text" id="materiTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="Masukkan judul materi">
+                        <input type="text" id="materiTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="Masukkan judul materi">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                        <textarea id="materiDesc" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Masukkan deskripsi (opsional)"></textarea>
+                        <textarea id="materiDesc" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" rows="3" placeholder="Masukkan deskripsi (opsional)"></textarea>
                     </div>
                     <div class="flex gap-3">
                         <button id="cancelMateri" class="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all">Batal</button>
-                        <button id="saveMateri" class="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all">Simpan</button>
+                        <button id="saveMateri" class="flex-1 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-all">Simpan</button>
                     </div>
                 </div>
             </div>
@@ -134,22 +134,22 @@ function renderMateriManager(materi, allSubMateri) {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Judul Sub Materi</label>
-                        <input type="text" id="subTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="Masukkan judul">
+                        <input type="text" id="subTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="Masukkan judul">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Link YouTube</label>
-                        <input type="text" id="subVideo" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="https://youtube.com/watch?v=...">
+                        <input type="text" id="subVideo" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="https://youtube.com/watch?v=...">
                         <p class="text-xs text-gray-400 mt-1">Link video YouTube (akan ditampilkan preview)</p>
                     </div>
                     <div class="border-t pt-4">
                         <h4 class="font-semibold text-gray-700 mb-3">📋 LKPD (Lembar Kerja)</h4>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Judul LKPD</label>
-                            <input type="text" id="lkpdTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="Masukkan judul LKPD">
+                            <input type="text" id="lkpdTitle" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="Masukkan judul LKPD">
                         </div>
                         <div class="mt-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Penugasan</label>
-                            <textarea id="lkpdDesc" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Jelaskan tugas yang harus dilakukan siswa"></textarea>
+                            <textarea id="lkpdDesc" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500" rows="3" placeholder="Jelaskan tugas yang harus dilakukan siswa"></textarea>
                         </div>
                     </div>
                     <div class="flex gap-3">

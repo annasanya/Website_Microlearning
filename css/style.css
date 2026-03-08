@@ -3,7 +3,7 @@
 }
 
 .gradient-bg { 
-    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); 
+    background: linear-gradient(135deg, #93C5FD 0%, #60A5FA 100%);
 }
 
 .card-shadow { 
@@ -195,7 +195,7 @@ button:disabled {
 
 /* Video Container */
 .bg-gray-900 {
-    background: #0f172a;
+    background: #1E3A8A;
 }
 
 .bg-gray-900 iframe {
@@ -306,35 +306,6 @@ button:active {
     }
 }
 
-/* Style untuk link LKPD */
-.lkpd-link-input {
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-}
-
-.lkpd-link-input:focus {
-    border-color: #fbbf24;
-    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
-    outline: none;
-}
-
-.lkpd-link-preview {
-    background: #fef3c7;
-    border: 1px solid #fcd34d;
-    border-radius: 0.75rem;
-    padding: 1rem;
-}
-
-.lkpd-link-preview a {
-    color: #d97706;
-    word-break: break-all;
-}
-
-.lkpd-link-preview a:hover {
-    color: #b45309;
-    text-decoration: underline;
-}
-
     /* Extra small devices (handphone kecil) */
     @media (max-width: 480px) {
         .line-clamp-2 {
@@ -380,4 +351,3 @@ button:active {
             display: none;
         }
     }
-

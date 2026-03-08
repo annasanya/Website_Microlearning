@@ -10,28 +10,27 @@ function renderStudentMateri(materi, subMateri, progress, pretest, posttest, com
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6">📚 Materi & Tugas</h1>
             
             <div class="space-y-6">
-                <!-- Pretest Card -->
-                <div class="bg-white rounded-2xl card-shadow overflow-hidden">
-                    <div class="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${pretestDone ? 'bg-green-50' : 'bg-orange-50'}">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 ${pretestDone ? 'bg-green-500' : 'bg-orange-500'} rounded-xl flex items-center justify-center text-white text-2xl">
-                                ${pretestDone ? '✅' : '✏️'}
+                    <!-- Pretest Card -->
+                    <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+                        <div class="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${pretestDone ? 'bg-green-50' : 'bg-orange-50'}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 ${pretestDone ? 'bg-green-500' : 'bg-orange-500'} rounded-xl flex items-center justify-center text-white text-2xl">
+                                    ${pretestDone ? '✅' : '✏️'}
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">Pretest</h3>
+                                    <p class="text-sm text-gray-500">${pretest ? parseJSON(pretest.questions).length + ' soal • Benar/Salah' : 'Belum tersedia'}</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-800">Pretest</h3>
-                                <p class="text-sm text-gray-500">${pretest ? parseJSON(pretest.questions).length + ' soal • Benar/Salah' : 'Belum tersedia'}</p>
-                            </div>
+                            ${pretest && !pretestDone ? `
+                                <button data-start-test="pretest" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-all">Mulai Pretest</button>
+                            ` : pretestDone ? `
+                                <span class="px-4 py-2 bg-green-100 text-green-700 rounded-xl font-semibold">✔ Selesai</span>
+                            ` : `
+                                <span class="px-4 py-2 bg-gray-100 text-gray-500 rounded-xl">Belum tersedia</span>
+                            `}
                         </div>
-                        ${pretest && !pretestDone ? `
-                            <button data-start-test="pretest" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-all">Mulai Pretest</button>
-                        ` : pretestDone ? `
-                            <span class="px-4 py-2 bg-green-100 text-green-700 rounded-xl font-semibold">✔ Selesai</span>
-                        ` : `
-                            <span class="px-4 py-2 bg-gray-100 text-gray-500 rounded-xl">Belum tersedia</span>
-                        `}
                     </div>
-                </div>
-
                 <!-- Materi Cards -->
                 ${materi.map(m => {
                     const subs = getSubMateri(m.id);

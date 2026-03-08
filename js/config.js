@@ -11,5 +11,8 @@ const CONFIG = {
 const TEACHER_CODE = 'guru123';
 const STORAGE_KEY = 'microclass_data';
 
+// Opsi pilihan ganda standar
+const MCQ_OPTIONS = ['A', 'B', 'C', 'D', 'E'];
+
 // Default data
 const defaultData = [];
